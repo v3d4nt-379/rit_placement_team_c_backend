@@ -26,6 +26,9 @@ const applicationRoutes =
 const offerRoutes =
   require('./routes/offerRoutes');
 
+const internalApplicationRoutes =
+  require('./routes/internalApplicationRoutes');
+
 const reportRoutes =
   require('./routes/reportRoutes');
 
@@ -124,6 +127,11 @@ app.use(
 app.use(
   '/internal/v1/offers',
   offerRoutes
+);
+
+app.use(
+  '/internal/v1/applications',
+  internalApplicationRoutes
 );
 
 app.use(

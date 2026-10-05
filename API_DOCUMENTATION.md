@@ -243,6 +243,42 @@ The `correlation_id` is either provided in the `X-Correlation-ID` request header
   - `404 Not Found` (`APPLICATION_NOT_FOUND`)
   - `409 Conflict` (`WITHDRAWAL_NOT_ALLOWED`) - Triggers if application is already SELECTED, OFFER_ISSUED, or WITHDRAWN.
 
+### 7.5. Update Application Eligibility
+- **Method:** `POST`
+- **Path:** `/internal/v1/applications/:applicationId/eligibility`
+- **Full URL:** `https://rit-placement-team-c-backend.onrender.com/internal/v1/applications/:applicationId/eligibility`
+- **Purpose:** Internal endpoint used by Team A to store eligibility evaluation results for an application.
+- **Authentication:** None (Internal endpoint)
+- **Path Parameters:** `applicationId` (string)
+- **Request Body (Required fields):**
+  - `request_id` (string)
+  - `decision_id` (string)
+  - `result` (string, one of `ELIGIBLE`, `CONDITIONAL`, `NOT_ELIGIBLE`)
+  - `rule_set_version` (string)
+  - `failed_rules` (array of strings)
+  - `lease_id` (string)
+- **Success Response (200 OK):**
+```json
+{
+  "data": {
+    "application_id": "APP-123",
+    "eligibility": {
+      "requestId": "REQ-123",
+      "decisionId": "DEC-123",
+      "result": "ELIGIBLE",
+      "ruleSetVersion": "v1.0",
+      "failedRules": [],
+      "leaseId": "LEASE-123"
+    },
+    "version": 2
+  },
+  "meta": { "api_version": "v1", "correlation_id": "uuid" }
+}
+```
+- **Error Responses:**
+  - `400 Bad Request` (`INVALID_ELIGIBILITY_DATA`, `INVALID_ELIGIBILITY_RESULT`)
+  - `404 Not Found` (`APPLICATION_NOT_FOUND`)
+
 ---
 
 ## 8. OFFER ENDPOINTS
@@ -393,6 +429,7 @@ The backend is currently hosted on Render's free tier. Render may spin down the 
 | GET | `/api/v1/applications/:applicationId` | Get application by ID | None |
 | POST | `/api/v1/applications` | Create application | None |
 | POST | `/api/v1/applications/:applicationId/withdraw` | Withdraw application | None |
+| POST | `/internal/v1/applications/:applicationId/eligibility` | Update application eligibility | None |
 | POST | `/internal/v1/offers/commit` | Commit a job offer | None |
 | POST | `/internal/v1/offers/compensate` | Compensate an offer | None |
 | GET | `/api/v1/reports/placement-performance` | Get placement statistics | None |

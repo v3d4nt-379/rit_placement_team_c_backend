@@ -60,7 +60,7 @@ afterAll(async () => {
   await Student.deleteMany({ _id: { $in: ['TEST-STU-01', 'TEST-STU-02', 'TEST-STU-03', 'TEST-STU-04'] } });
 
   // Clean up test applications
-  const testApps = await Application.find({ _id: { $in: ['TEST-APP-01', 'TEST-APP-02', 'TEST-APP-03'] } });
+  const testApps = await Application.find({ _id: { $in: ['TEST-APP-01', 'TEST-APP-02', 'TEST-APP-03', 'TEST-APP-04'] } });
   const testAppIds = testApps.map(app => app._id);
 
   await Application.deleteMany({ _id: { $in: testAppIds } });
@@ -312,3 +312,153 @@ describe('Phase 6: Reports & Audit', () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 });
+
+describe('Phase 7: Eligibility updates', () => {
+  it('POST /internal/v1/applications/:id/eligibility updates eligibility successfully and preserves unrelated fields', async () => {
+    // Ensure robust cleanup before running the test
+    await Application.deleteOne({ _id: 'TEST-APP-04' });
+    
+    // 1. Create a new application
+    const appPayload = {
+      application_id: 'TEST-APP-04',
+      student_id: 'TEST-STU-04',
+      drive_id: 'TEST-DRV-01',
+      resume_version: 1,
+      consent: true,
+      idempotency_key: 'IDEMP-TEST-APP-04'
+    };
+    await request(BASE_URL).post('/api/v1/applications').send(appPayload);
+
+    const appBefore = await Application.findById('TEST-APP-04');
+    const versionBefore = appBefore.version;
+    const stateBefore = appBefore.state;
+    const studentIdBefore = appBefore.studentId;
+
+    const payload = {
+      request_id: 'REQ-123',
+      decision_id: 'DEC-123',
+      result: 'ELIGIBLE',
+      rule_set_version: 'v1.0',
+      failed_rules: [],
+      lease_id: 'LEASE-123'
+    };
+
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('X-Correlation-ID', 'CORR-ELIG-123')
+      .send(payload);
+
+    expect(res.status).toBe(200);
+    expect(res.body.meta.correlation_id).toBe('CORR-ELIG-123');
+    expect(res.body.data.eligibility.result).toBe('ELIGIBLE');
+
+    const appAfter = await Application.findById('TEST-APP-04');
+    expect(appAfter.version).toBe(versionBefore + 1);
+    expect(appAfter.state).toBe(stateBefore); // state preserved
+    expect(appAfter.studentId).toBe(studentIdBefore); // other fields preserved
+    
+    // Verify complete eligibility object
+    expect(appAfter.eligibility.requestId).toBe('REQ-123');
+    expect(appAfter.eligibility.decisionId).toBe('DEC-123');
+    expect(appAfter.eligibility.result).toBe('ELIGIBLE');
+    expect(appAfter.eligibility.ruleSetVersion).toBe('v1.0');
+    expect(appAfter.eligibility.failedRules).toEqual([]);
+    expect(appAfter.eligibility.leaseId).toBe('LEASE-123');
+    
+    // Verify AuditLog
+    const audit = await AuditLog.findOne({ entityId: 'TEST-APP-04', action: 'ELIGIBILITY_UPDATED' });
+    expect(audit).toBeTruthy();
+    expect(audit.correlationId).toBe('CORR-ELIG-123');
+    expect(audit.action).toBe('ELIGIBILITY_UPDATED');
+    expect(audit.entityId).toBe('TEST-APP-04');
+    expect(audit.sourceService).toBe('TEAM_C');
+    
+    // Verify OutboxEvent
+    const event = await OutboxEvent.findOne({ aggregateId: 'TEST-APP-04', eventType: 'APPLICATION_ELIGIBILITY_UPDATED' });
+    expect(event).toBeTruthy();
+    expect(event.correlationId).toBe('CORR-ELIG-123');
+    expect(event.eventType).toBe('APPLICATION_ELIGIBILITY_UPDATED');
+    expect(event.aggregateType).toBe('APPLICATION');
+    expect(event.aggregateId).toBe('TEST-APP-04');
+    expect(event.payload.eligibility.result).toBe('ELIGIBLE');
+    expect(event.payload.version).toBe(versionBefore + 1);
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility returns 404 for unknown application', async () => {
+    const payload = {
+      request_id: 'REQ-123',
+      decision_id: 'DEC-123',
+      result: 'ELIGIBLE',
+      rule_set_version: 'v1.0',
+      failed_rules: [],
+      lease_id: 'LEASE-123'
+    };
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-999/eligibility')
+      .send(payload);
+    
+    expect(res.status).toBe(404);
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility returns 400 for missing required field', async () => {
+    const payload = {
+      decision_id: 'DEC-123', // missing request_id
+      result: 'ELIGIBLE',
+      rule_set_version: 'v1.0',
+      failed_rules: [],
+      lease_id: 'LEASE-123'
+    };
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .send(payload);
+    
+    expect(res.status).toBe(400);
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility returns 400 for invalid result', async () => {
+    const payload = {
+      request_id: 'REQ-123',
+      decision_id: 'DEC-123',
+      result: 'INVALID_RESULT',
+      rule_set_version: 'v1.0',
+      failed_rules: [],
+      lease_id: 'LEASE-123'
+    };
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .send(payload);
+    
+    expect(res.status).toBe(400);
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility returns 400 for invalid failed_rules type', async () => {
+    const payload = {
+      request_id: 'REQ-123',
+      decision_id: 'DEC-123',
+      result: 'ELIGIBLE',
+      rule_set_version: 'v1.0',
+      failed_rules: 'not-an-array', // invalid
+      lease_id: 'LEASE-123'
+    };
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .send(payload);
+    
+    expect(res.status).toBe(400);
+
+    const payload2 = {
+      request_id: 'REQ-123',
+      decision_id: 'DEC-123',
+      result: 'ELIGIBLE',
+      rule_set_version: 'v1.0',
+      failed_rules: [123], // invalid array elements
+      lease_id: 'LEASE-123'
+    };
+    const res2 = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .send(payload2);
+    
+    expect(res2.status).toBe(400);
+  });
+});
+
