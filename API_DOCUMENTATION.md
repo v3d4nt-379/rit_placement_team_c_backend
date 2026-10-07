@@ -385,6 +385,21 @@ curl -X POST https://rit-placement-team-c-backend.onrender.com/api/v1/applicatio
   }'
 ```
 
+### curl (Update Application Eligibility)
+```bash
+curl -X POST https://rit-placement-team-c-backend.onrender.com/internal/v1/applications/APP-001/eligibility \
+  -H "Content-Type: application/json" \
+  -H "X-Correlation-ID: 12345678" \
+  -d '{
+    "request_id": "REQ-123",
+    "decision_id": "DEC-123",
+    "result": "ELIGIBLE",
+    "rule_set_version": "v1.0",
+    "failed_rules": [],
+    "lease_id": "LEASE-123"
+  }'
+```
+
 ### fetch (Get Placement Performance)
 ```javascript
 fetch('https://rit-placement-team-c-backend.onrender.com/api/v1/reports/placement-performance', {
