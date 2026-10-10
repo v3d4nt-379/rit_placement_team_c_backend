@@ -256,7 +256,10 @@ The `correlation_id` is either provided in the `X-Correlation-ID` request header
   - `result` (string, one of `ELIGIBLE`, `CONDITIONAL`, `NOT_ELIGIBLE`)
   - `rule_set_version` (string)
   - `failed_rules` (array of strings)
-  - `lease_id` (string)
+  - `lease_id` (string or null). Important rules:
+    - If `result` is `ELIGIBLE`, `lease_id` must be a valid, non-empty string.
+    - If `result` is `CONDITIONAL` or `NOT_ELIGIBLE`, `lease_id` can be `null` if no lease exists.
+    - Omitted values, empty strings, and malformed types are rejected.
 - **Success Response (200 OK):**
 ```json
 {
@@ -385,7 +388,7 @@ curl -X POST https://rit-placement-team-c-backend.onrender.com/api/v1/applicatio
   }'
 ```
 
-### curl (Update Application Eligibility)
+### curl (Update Application Eligibility - ELIGIBLE)
 ```bash
 curl -X POST https://rit-placement-team-c-backend.onrender.com/internal/v1/applications/APP-001/eligibility \
   -H "Content-Type: application/json" \
@@ -397,6 +400,21 @@ curl -X POST https://rit-placement-team-c-backend.onrender.com/internal/v1/appli
     "rule_set_version": "v1.0",
     "failed_rules": [],
     "lease_id": "LEASE-123"
+  }'
+```
+
+### curl (Update Application Eligibility - CONDITIONAL)
+```bash
+curl -X POST https://rit-placement-team-c-backend.onrender.com/internal/v1/applications/APP-001/eligibility \
+  -H "Content-Type: application/json" \
+  -H "X-Correlation-ID: 12345678" \
+  -d '{
+    "request_id": "REQ-124",
+    "decision_id": "DEC-124",
+    "result": "CONDITIONAL",
+    "rule_set_version": "v1.0",
+    "failed_rules": ["GPA_REQUIREMENT"],
+    "lease_id": null
   }'
 ```
 

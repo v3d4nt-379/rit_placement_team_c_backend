@@ -460,5 +460,93 @@ describe('Phase 7: Eligibility updates', () => {
     
     expect(res2.status).toBe(400);
   });
+
+  it('POST /internal/v1/applications/:id/eligibility returns 400 for ELIGIBLE with lease_id: null', async () => {
+    const payload = {
+      request_id: 'REQ-123', decision_id: 'DEC-123', result: 'ELIGIBLE',
+      rule_set_version: 'v1.0', failed_rules: [], lease_id: null
+    };
+    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    expect(res.status).toBe(400);
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility succeeds for CONDITIONAL with lease_id: null', async () => {
+    const payload = {
+      request_id: 'REQ-123', decision_id: 'DEC-123', result: 'CONDITIONAL',
+      rule_set_version: 'v1.0', failed_rules: ['RULE_1'], lease_id: null
+    };
+    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    expect(res.status).toBe(200);
+    const appAfter = await Application.findById('TEST-APP-04');
+    expect(appAfter.eligibility.leaseId).toBeNull();
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility succeeds for NOT_ELIGIBLE with lease_id: null', async () => {
+    const payload = {
+      request_id: 'REQ-123', decision_id: 'DEC-123', result: 'NOT_ELIGIBLE',
+      rule_set_version: 'v1.0', failed_rules: ['RULE_1'], lease_id: null
+    };
+    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    expect(res.status).toBe(200);
+    const appAfter = await Application.findById('TEST-APP-04');
+    expect(appAfter.eligibility.leaseId).toBeNull();
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility succeeds for CONDITIONAL with valid lease_id', async () => {
+    const payload = {
+      request_id: 'REQ-123', decision_id: 'DEC-123', result: 'CONDITIONAL',
+      rule_set_version: 'v1.0', failed_rules: ['RULE_1'], lease_id: 'LEASE-456'
+    };
+    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    expect(res.status).toBe(200);
+    const appAfter = await Application.findById('TEST-APP-04');
+    expect(appAfter.eligibility.leaseId).toBe('LEASE-456');
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility succeeds for NOT_ELIGIBLE with valid lease_id', async () => {
+    const payload = {
+      request_id: 'REQ-123', decision_id: 'DEC-123', result: 'NOT_ELIGIBLE',
+      rule_set_version: 'v1.0', failed_rules: ['RULE_1'], lease_id: 'LEASE-456'
+    };
+    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    expect(res.status).toBe(200);
+    const appAfter = await Application.findById('TEST-APP-04');
+    expect(appAfter.eligibility.leaseId).toBe('LEASE-456');
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility rejects empty-string lease_id', async () => {
+    const payload = {
+      request_id: 'REQ-123', decision_id: 'DEC-123', result: 'ELIGIBLE',
+      rule_set_version: 'v1.0', failed_rules: [], lease_id: ''
+    };
+    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    expect(res.status).toBe(400);
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility rejects numeric, object, and array values for lease_id', async () => {
+    const payloads = [
+      { lease_id: 123 },
+      { lease_id: {} },
+      { lease_id: [] }
+    ];
+    for (const p of payloads) {
+      const payload = {
+        request_id: 'REQ-123', decision_id: 'DEC-123', result: 'ELIGIBLE',
+        rule_set_version: 'v1.0', failed_rules: [], ...p
+      };
+      const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility rejects omitted lease_id', async () => {
+    const payload = {
+      request_id: 'REQ-123', decision_id: 'DEC-123', result: 'ELIGIBLE',
+      rule_set_version: 'v1.0', failed_rules: []
+      // lease_id omitted
+    };
+    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    expect(res.status).toBe(400);
+  });
 });
 

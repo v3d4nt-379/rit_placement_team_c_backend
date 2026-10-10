@@ -20,6 +20,10 @@ router.post('/:applicationId/eligibility', async (req, res, next) => {
       lease_id
     } = req.body;
 
+    const hasLeaseId = Object.prototype.hasOwnProperty.call(req.body, 'lease_id');
+    const isLeaseNull = lease_id === null;
+    const isLeaseValidString = typeof lease_id === 'string' && lease_id !== '';
+
     if (
       !request_id ||
       typeof request_id !== 'string' ||
@@ -31,13 +35,13 @@ router.post('/:applicationId/eligibility', async (req, res, next) => {
       typeof rule_set_version !== 'string' ||
       !Array.isArray(failed_rules) ||
       !failed_rules.every(r => typeof r === 'string') ||
-      !lease_id ||
-      typeof lease_id !== 'string'
+      !hasLeaseId ||
+      (!isLeaseValidString && !(isLeaseNull && ['CONDITIONAL', 'NOT_ELIGIBLE'].includes(result)))
     ) {
       return res.status(400).json({
         error: {
           code: 'INVALID_ELIGIBILITY_DATA',
-          message: 'request_id, decision_id, result, rule_set_version, failed_rules (array of strings), and lease_id are required and must be valid types'
+          message: 'request_id, decision_id, result, rule_set_version, failed_rules are required. lease_id is required (can be null for CONDITIONAL/NOT_ELIGIBLE).'
         },
         meta: {
           correlation_id: req.correlationId
