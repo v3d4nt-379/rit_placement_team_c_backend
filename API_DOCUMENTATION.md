@@ -248,7 +248,11 @@ The `correlation_id` is either provided in the `X-Correlation-ID` request header
 - **Path:** `/internal/v1/applications/:applicationId/eligibility`
 - **Full URL:** `https://rit-placement-team-c-backend.onrender.com/internal/v1/applications/:applicationId/eligibility`
 - **Purpose:** Internal endpoint used by Team A to store eligibility evaluation results for an application.
-- **Authentication:** None (Internal endpoint)
+- **Authentication:** Bearer token via `Authorization: Bearer <token>` header. Requires `TEAM_C_CALLBACK_TOKEN` to be configured on the server.
+- **Headers:**
+  - `Authorization`: `Bearer <TEAM_C_CALLBACK_TOKEN>` (required)
+  - `Content-Type`: `application/json` (required)
+  - `X-Correlation-ID`: Optional correlation UUID for tracing
 - **Path Parameters:** `applicationId` (string)
 - **Request Body (Required fields):**
   - `request_id` (string)
@@ -280,7 +284,9 @@ The `correlation_id` is either provided in the `X-Correlation-ID` request header
 ```
 - **Error Responses:**
   - `400 Bad Request` (`INVALID_ELIGIBILITY_DATA`, `INVALID_ELIGIBILITY_RESULT`)
+  - `401 Unauthorized` (`UNAUTHORIZED`) - Missing, malformed, or invalid bearer token.
   - `404 Not Found` (`APPLICATION_NOT_FOUND`)
+  - `500 Internal Server Error` (`CONFIGURATION_ERROR`) - Server-side `TEAM_C_CALLBACK_TOKEN` is missing or unconfigured (fails closed).
 
 ---
 
@@ -391,6 +397,7 @@ curl -X POST https://rit-placement-team-c-backend.onrender.com/api/v1/applicatio
 ### curl (Update Application Eligibility - ELIGIBLE)
 ```bash
 curl -X POST https://rit-placement-team-c-backend.onrender.com/internal/v1/applications/APP-001/eligibility \
+  -H "Authorization: Bearer <TEAM_C_CALLBACK_TOKEN>" \
   -H "Content-Type: application/json" \
   -H "X-Correlation-ID: 12345678" \
   -d '{
@@ -406,6 +413,7 @@ curl -X POST https://rit-placement-team-c-backend.onrender.com/internal/v1/appli
 ### curl (Update Application Eligibility - CONDITIONAL)
 ```bash
 curl -X POST https://rit-placement-team-c-backend.onrender.com/internal/v1/applications/APP-001/eligibility \
+  -H "Authorization: Bearer <TEAM_C_CALLBACK_TOKEN>" \
   -H "Content-Type: application/json" \
   -H "X-Correlation-ID: 12345678" \
   -d '{
@@ -462,7 +470,7 @@ The backend is currently hosted on Render's free tier. Render may spin down the 
 | GET | `/api/v1/applications/:applicationId` | Get application by ID | None |
 | POST | `/api/v1/applications` | Create application | None |
 | POST | `/api/v1/applications/:applicationId/withdraw` | Withdraw application | None |
-| POST | `/internal/v1/applications/:applicationId/eligibility` | Update application eligibility | None |
+| POST | `/internal/v1/applications/:applicationId/eligibility` | Update application eligibility | Bearer Token (`TEAM_C_CALLBACK_TOKEN`) |
 | POST | `/internal/v1/offers/commit` | Commit a job offer | None |
 | POST | `/internal/v1/offers/compensate` | Compensate an offer | None |
 | GET | `/api/v1/reports/placement-performance` | Get placement statistics | None |

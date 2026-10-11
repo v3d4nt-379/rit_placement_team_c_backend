@@ -4,7 +4,8 @@ const mongoose = require('mongoose');
 
 jest.setTimeout(30000);
 
-const BASE_URL = 'http://localhost:5000';
+const app = require('../app');
+const BASE_URL = app;
 
 const Application = require('../models/Application');
 const Drive = require('../models/Drive');
@@ -314,6 +315,22 @@ describe('Phase 6: Reports & Audit', () => {
 });
 
 describe('Phase 7: Eligibility updates', () => {
+  const TEST_CALLBACK_TOKEN = 'test-callback-token';
+  let originalCallbackToken;
+
+  beforeAll(() => {
+    originalCallbackToken = process.env.TEAM_C_CALLBACK_TOKEN;
+    process.env.TEAM_C_CALLBACK_TOKEN = TEST_CALLBACK_TOKEN;
+  });
+
+  afterAll(() => {
+    if (originalCallbackToken !== undefined) {
+      process.env.TEAM_C_CALLBACK_TOKEN = originalCallbackToken;
+    } else {
+      delete process.env.TEAM_C_CALLBACK_TOKEN;
+    }
+  });
+
   it('POST /internal/v1/applications/:id/eligibility updates eligibility successfully and preserves unrelated fields', async () => {
     // Ensure robust cleanup before running the test
     await Application.deleteOne({ _id: 'TEST-APP-04' });
@@ -345,6 +362,7 @@ describe('Phase 7: Eligibility updates', () => {
 
     const res = await request(BASE_URL)
       .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
       .set('X-Correlation-ID', 'CORR-ELIG-123')
       .send(payload);
 
@@ -395,6 +413,7 @@ describe('Phase 7: Eligibility updates', () => {
     };
     const res = await request(BASE_URL)
       .post('/internal/v1/applications/TEST-APP-999/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
       .send(payload);
     
     expect(res.status).toBe(404);
@@ -410,6 +429,7 @@ describe('Phase 7: Eligibility updates', () => {
     };
     const res = await request(BASE_URL)
       .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
       .send(payload);
     
     expect(res.status).toBe(400);
@@ -426,6 +446,7 @@ describe('Phase 7: Eligibility updates', () => {
     };
     const res = await request(BASE_URL)
       .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
       .send(payload);
     
     expect(res.status).toBe(400);
@@ -442,6 +463,7 @@ describe('Phase 7: Eligibility updates', () => {
     };
     const res = await request(BASE_URL)
       .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
       .send(payload);
     
     expect(res.status).toBe(400);
@@ -456,6 +478,7 @@ describe('Phase 7: Eligibility updates', () => {
     };
     const res2 = await request(BASE_URL)
       .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
       .send(payload2);
     
     expect(res2.status).toBe(400);
@@ -466,7 +489,10 @@ describe('Phase 7: Eligibility updates', () => {
       request_id: 'REQ-123', decision_id: 'DEC-123', result: 'ELIGIBLE',
       rule_set_version: 'v1.0', failed_rules: [], lease_id: null
     };
-    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
+      .send(payload);
     expect(res.status).toBe(400);
   });
 
@@ -475,7 +501,10 @@ describe('Phase 7: Eligibility updates', () => {
       request_id: 'REQ-123', decision_id: 'DEC-123', result: 'CONDITIONAL',
       rule_set_version: 'v1.0', failed_rules: ['RULE_1'], lease_id: null
     };
-    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
+      .send(payload);
     expect(res.status).toBe(200);
     const appAfter = await Application.findById('TEST-APP-04');
     expect(appAfter.eligibility.leaseId).toBeNull();
@@ -486,7 +515,10 @@ describe('Phase 7: Eligibility updates', () => {
       request_id: 'REQ-123', decision_id: 'DEC-123', result: 'NOT_ELIGIBLE',
       rule_set_version: 'v1.0', failed_rules: ['RULE_1'], lease_id: null
     };
-    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
+      .send(payload);
     expect(res.status).toBe(200);
     const appAfter = await Application.findById('TEST-APP-04');
     expect(appAfter.eligibility.leaseId).toBeNull();
@@ -497,7 +529,10 @@ describe('Phase 7: Eligibility updates', () => {
       request_id: 'REQ-123', decision_id: 'DEC-123', result: 'CONDITIONAL',
       rule_set_version: 'v1.0', failed_rules: ['RULE_1'], lease_id: 'LEASE-456'
     };
-    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
+      .send(payload);
     expect(res.status).toBe(200);
     const appAfter = await Application.findById('TEST-APP-04');
     expect(appAfter.eligibility.leaseId).toBe('LEASE-456');
@@ -508,7 +543,10 @@ describe('Phase 7: Eligibility updates', () => {
       request_id: 'REQ-123', decision_id: 'DEC-123', result: 'NOT_ELIGIBLE',
       rule_set_version: 'v1.0', failed_rules: ['RULE_1'], lease_id: 'LEASE-456'
     };
-    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
+      .send(payload);
     expect(res.status).toBe(200);
     const appAfter = await Application.findById('TEST-APP-04');
     expect(appAfter.eligibility.leaseId).toBe('LEASE-456');
@@ -519,7 +557,10 @@ describe('Phase 7: Eligibility updates', () => {
       request_id: 'REQ-123', decision_id: 'DEC-123', result: 'ELIGIBLE',
       rule_set_version: 'v1.0', failed_rules: [], lease_id: ''
     };
-    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
+      .send(payload);
     expect(res.status).toBe(400);
   });
 
@@ -534,7 +575,10 @@ describe('Phase 7: Eligibility updates', () => {
         request_id: 'REQ-123', decision_id: 'DEC-123', result: 'ELIGIBLE',
         rule_set_version: 'v1.0', failed_rules: [], ...p
       };
-      const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+      const res = await request(BASE_URL)
+        .post('/internal/v1/applications/TEST-APP-04/eligibility')
+        .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
+        .send(payload);
       expect(res.status).toBe(400);
     }
   });
@@ -545,8 +589,108 @@ describe('Phase 7: Eligibility updates', () => {
       rule_set_version: 'v1.0', failed_rules: []
       // lease_id omitted
     };
-    const res = await request(BASE_URL).post('/internal/v1/applications/TEST-APP-04/eligibility').send(payload);
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
+      .send(payload);
     expect(res.status).toBe(400);
+  });
+
+  // Authentication test cases
+  it('POST /internal/v1/applications/:id/eligibility returns 401 when Authorization header is missing', async () => {
+    const payload = {
+      request_id: 'REQ-123',
+      decision_id: 'DEC-123',
+      result: 'ELIGIBLE',
+      rule_set_version: 'v1.0',
+      failed_rules: [],
+      lease_id: 'LEASE-123'
+    };
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .send(payload);
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility returns 401 for incorrect token', async () => {
+    const payload = {
+      request_id: 'REQ-123',
+      decision_id: 'DEC-123',
+      result: 'ELIGIBLE',
+      rule_set_version: 'v1.0',
+      failed_rules: [],
+      lease_id: 'LEASE-123'
+    };
+    const res = await request(BASE_URL)
+      .post('/internal/v1/applications/TEST-APP-04/eligibility')
+      .set('Authorization', 'Bearer wrong-callback-token')
+      .send(payload);
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility returns 401 for malformed authorization header', async () => {
+    const payload = {
+      request_id: 'REQ-123',
+      decision_id: 'DEC-123',
+      result: 'ELIGIBLE',
+      rule_set_version: 'v1.0',
+      failed_rules: [],
+      lease_id: 'LEASE-123'
+    };
+    const badHeaders = [
+      'Basic test-callback-token',
+      'Bearer',
+      'Bearer token extra',
+      'test-callback-token'
+    ];
+    for (const h of badHeaders) {
+      const res = await request(BASE_URL)
+        .post('/internal/v1/applications/TEST-APP-04/eligibility')
+        .set('Authorization', h)
+        .send(payload);
+
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    }
+  });
+
+  it('POST /internal/v1/applications/:id/eligibility fails closed with 500 when server token is missing and does not modify data', async () => {
+    const appBefore = await Application.findById('TEST-APP-04');
+    const versionBefore = appBefore ? appBefore.version : 1;
+    const eligibilityBefore = appBefore ? JSON.stringify(appBefore.eligibility) : null;
+
+    delete process.env.TEAM_C_CALLBACK_TOKEN;
+
+    try {
+      const payload = {
+        request_id: 'REQ-UNAUTH',
+        decision_id: 'DEC-UNAUTH',
+        result: 'ELIGIBLE',
+        rule_set_version: 'v1.0',
+        failed_rules: [],
+        lease_id: 'LEASE-UNAUTH'
+      };
+      const res = await request(BASE_URL)
+        .post('/internal/v1/applications/TEST-APP-04/eligibility')
+        .set('Authorization', `Bearer ${TEST_CALLBACK_TOKEN}`)
+        .send(payload);
+
+      expect(res.status).toBe(500);
+      expect(res.body.error.code).toBe('CONFIGURATION_ERROR');
+
+      // Verify application data was NOT modified
+      const appAfter = await Application.findById('TEST-APP-04');
+      if (appBefore) {
+        expect(appAfter.version).toBe(versionBefore);
+        expect(JSON.stringify(appAfter.eligibility)).toBe(eligibilityBefore);
+      }
+    } finally {
+      process.env.TEAM_C_CALLBACK_TOKEN = TEST_CALLBACK_TOKEN;
+    }
   });
 });
 

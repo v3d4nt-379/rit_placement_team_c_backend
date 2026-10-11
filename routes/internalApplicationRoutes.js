@@ -5,9 +5,10 @@ const router = express.Router();
 const Application = require('../models/Application');
 const AuditLog = require('../models/AuditLog');
 const OutboxEvent = require('../models/OutboxEvent');
+const { verifyCallbackToken } = require('../middleware/authMiddleware');
 
 // POST /internal/v1/applications/:applicationId/eligibility
-router.post('/:applicationId/eligibility', async (req, res, next) => {
+router.post('/:applicationId/eligibility', verifyCallbackToken, async (req, res, next) => {
   const session = await mongoose.startSession();
 
   try {
