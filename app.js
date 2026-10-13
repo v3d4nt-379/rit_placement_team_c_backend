@@ -13,6 +13,7 @@ require('./models/InterviewSlot');
 require('./models/AuditLog');
 require('./models/Offer');
 require('./models/OutboxEvent');
+require('./models/DriveRanking');
 
 const studentRoutes =
   require('./routes/studentRoutes');
@@ -28,6 +29,11 @@ const offerRoutes =
 
 const internalApplicationRoutes =
   require('./routes/internalApplicationRoutes');
+
+const {
+  rankingRouter,
+  driveRankingsRouter
+} = require('./routes/internalRankingRoutes');
 
 const reportRoutes =
   require('./routes/reportRoutes');
@@ -132,6 +138,16 @@ app.use(
 app.use(
   '/internal/v1/applications',
   internalApplicationRoutes
+);
+
+app.use(
+  '/internal/v1/drive-rankings',
+  rankingRouter
+);
+
+app.use(
+  '/internal/v1/drives',
+  driveRankingsRouter
 );
 
 app.use(
