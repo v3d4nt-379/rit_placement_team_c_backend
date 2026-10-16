@@ -1,0 +1,97 @@
+commit a0a427a3fce19b7d69cfc0d0bb761b1b1e4b331f
+Author: v3d4nt-379 <vedm.amate@gmail.com>
+Date:   Wed Oct 14 01:14:21 2026 +0530
+
+    Add Team B ranking integration
+
+ .env.example                    |   1 +
+ API_DOCUMENTATION.md            | 174 +++++++++-
+ app.js                          |  16 +
+ middleware/authMiddleware.js    |  76 ++++-
+ models/DriveRanking.js          |  86 +++++
+ routes/internalRankingRoutes.js | 502 +++++++++++++++++++++++++++++
+ tests/api.test.js               | 691 ++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 1540 insertions(+), 6 deletions(-)
+
+commit ecb77748deb198a374975f084416eb08e174caf8
+Author: v3d4nt-379 <vedm.amate@gmail.com>
+Date:   Sun Oct 11 14:30:57 2026 +0530
+
+    Add token authentication to eligibility callback
+
+ .env.example                        |   3 +
+ API_DOCUMENTATION.md                |  12 ++-
+ app.js                              |   6 +-
+ middleware/authMiddleware.js        |  77 +++++++++++++++++
+ routes/internalApplicationRoutes.js |   3 +-
+ tests/api.test.js                   | 162 ++++++++++++++++++++++++++++++++++--
+ 6 files changed, 250 insertions(+), 13 deletions(-)
+
+commit dd56f3be811b890d8ad45731115e37421bd10395
+Author: v3d4nt-379 <vedm.amate@gmail.com>
+Date:   Sun Oct 11 02:43:10 2026 +0530
+
+    Allow null lease ID for non-eligible results
+
+ API_DOCUMENTATION.md                | 22 +++++++++-
+ routes/internalApplicationRoutes.js | 10 +++--
+ tests/api.test.js                   | 88 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 115 insertions(+), 5 deletions(-)
+
+commit 9ce20395a6d3944a931dbda457ad4b1c2f3a96a4
+Author: v3d4nt-379 <vedm.amate@gmail.com>
+Date:   Wed Oct 7 16:26:20 2026 +0530
+
+    API_DOCUMENTATION.md updated with new Eligibilty endpoint integration
+
+ API_DOCUMENTATION.md | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+commit 0c81cde37640bce708bd6a00863cdffc2543b600
+Author: v3d4nt-379 <vedm.amate@gmail.com>
+Date:   Mon Oct 5 22:58:42 2026 +0530
+
+    Add eligibility callback endpoint
+
+ API_DOCUMENTATION.md                |  37 +++++++++
+ app.js                              |   8 ++
+ routes/internalApplicationRoutes.js | 149 +++++++++++++++++++++++++++++++++++
+ tests/api.test.js                   | 152 +++++++++++++++++++++++++++++++++++-
+ 4 files changed, 345 insertions(+), 1 deletion(-)
+
+commit b08885a59fa42ada3af94a14517eabd8d4073dc6
+Author: v3d4nt-379 <vedm.amate@gmail.com>
+Date:   Sat Oct 3 15:19:56 2026 +0530
+
+    Add API endpoint documentation
+
+ API_DOCUMENTATION.md | 399 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 399 insertions(+)
+
+commit a7b1f608b0f2c7c2e918a291c133a789641120c3
+Author: v3d4nt-379 <vedm.amate@gmail.com>
+Date:   Sat Oct 3 14:55:22 2026 +0530
+
+    Prepare backend for deployment
+
+ .gitignore                  |   19 +
+ app.js                      |  220 ++
+ config/db.js                |   33 +
+ models/Application.js       |   96 +
+ models/AuditLog.js          |   64 +
+ models/Drive.js             |   91 +
+ models/InterviewSlot.js     |   35 +
+ models/Offer.js             |   75 +
+ models/OutboxEvent.js       |   63 +
+ models/Student.js           |   22 +
+ package-lock.json           | 5847 +++++++++++++++++++++++++++++++++++++++++++
+ package.json                |   23 +
+ routes/applicationRoutes.js |  378 +++
+ routes/auditRoutes.js       |   53 +
+ routes/driveRoutes.js       |  162 ++
+ routes/offerRoutes.js       |  366 +++
+ routes/reportRoutes.js      |   68 +
+ routes/studentRoutes.js     |  128 +
+ seed.js                     | 1390 ++++++++++
+ tests/api.test.js           |  314 +++
+ 20 files changed, 9447 insertions(+)
